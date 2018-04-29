@@ -1,0 +1,88 @@
+java类加载顺序：
+
+public class LoadClassOrder {
+
+	// 静态成员变量的初始化，是在静态代码块中初始化的
+	private static LoadClassOrder lco = new LoadClassOrder();
+	// (1) 上面这行相当于：(1) + (2)
+	// private static LoadClassOrder lco = null;
+
+	// 成员变量的初始化，是在构造器中初始化的
+	private SubClass sub = new SubClass();
+	// (3) 上面的代码相当于：(3) + (4)
+	// private SubClass sub = null;
+
+	static {
+		// (2) 这里进行对静态成员变量赋值
+		// lco = new LoadClassOrder();
+		System.out.println("LoadClassOrder静态代码块");
+	}
+
+	public LoadClassOrder() {
+		// (4) 在构造器中才会对成员变量进行初始化
+		// sub = new SubClass();
+		System.out.println("LoadClassOrder构造器");
+	}
+
+	public static void main(String[] args) {
+		System.out.println("main方法");
+	}
+}
+
+class SuperClass {
+	static {
+		System.out.println("SuperClass静态代码块");
+	}
+
+	SuperClass() {
+		System.out.println("SuperClass构造器");
+	}
+}
+
+class SubClass extends SuperClass {
+	static {
+		System.out.println("SubClass静态代码块");
+	}
+
+	SubClass() {
+		// 子类的构造器是肯定会去调父类构造器的，
+		// 这里相当于隐藏了一个super();
+		System.out.println("SubClass构造器");
+	}
+}
+
+执行结果：
+
+SuperClass静态代码块
+SubClass静态代码块
+SuperClass构造器
+SubClass构造器
+LoadClassOrder构造器
+LoadClassOrder静态代码块
+main方法
+
+这里要弄清三个问题：
+1、类中的静态变量的初始化，是在静态代码块中初始化的，并且放在静态代码块的最前面
+  举例：private static LoadClassOrder lco = new LoadClassOrder();
+  这行代码经过java编译器编译之后就会是这样：
+  private static LoadClassOrder lco = null;
+  static{
+      lco = new LoadClassOrder();
+  }
+  所以说类中的静态变量的初始化，是在静态代码块中初始化的
+  
+2、类中的成员变量的初始化，是在构造器中初始化的，并且放在构造器的最前面
+  举例：private SubClass sub = new SubClass();
+  这行代码经过java编译器编译之后就会是这样：
+  private SubClass sub = null;
+  public LoadClassOrder() {
+		sub = new SubClass();
+	}
+看到这里再看上面的代码的注解就大概能看明白了。
+
+3、子类加载时，先加载父类，静态代码块在加载类时执行
+  举例：上面的代码先执行父类的静态代码块，然后执行子类静态代码块就是这个原因
+  
+4、子类构造器在执行时，会先调用父类的构造器
+  所以上面的代码：先执行父类构造器，然后再执行子类的构造器
+
